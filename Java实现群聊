@@ -1,0 +1,160 @@
+Java实现简单群聊
+
+//服务器端
+import java.io.*;
+import java.util.Scanner;
+import java.net.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+public class Sever{
+	public static void main(String[] kl) throws IOException{
+		ServerSocket serverSocket = null;
+		Socket socket = null;
+		serverSocket = new ServerSocket(8888);
+		System.out.println("服务器建立成功");
+		List<Socket> list = new ArrayList<Socket>();
+		Map<String,Socket> socketMap = new HashMap<String,Socket>();
+
+		try{
+			while(true){
+				socket = serverSocket.accept();
+				BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				String sr = bufferedReader.readLine();
+				socketMap.put(sr,socket);
+				list.add(socket);
+				new Thread(new ServerRunnable(socket,list,socketMap)).start();
+				
+			}
+		}catch(Exception e){
+			//System.out.println("服务端出现异常"+e);
+		}
+		
+	}
+}
+
+//服务器线程类
+000import java.io.*;
+import java.util.Scanner;
+import java.net.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.Iterator;
+class ServerRunnable implements Runnable{
+	Socket socket = null;
+	List<Socket> list;
+	Map<String,Socket> socketMap;
+	public ServerRunnable(Socket socket,List<Socket> list,Map<String,Socket> socketMap){
+		this.socket = socket;
+		this.list = list;
+		this.socketMap = socketMap;
+	}
+	public synchronized void run(){
+		
+		while(true){
+			try{
+				//服务器读入
+				BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				String xiaoxi = null;
+				xiaoxi = bufferedReader.readLine();
+				//查找名字
+				Set<String> keys = socketMap.keySet();
+				String name = "";
+				for(String k : keys){
+					Socket so = socketMap.get(k);
+					if(socket==so){
+						name=k;
+						//break;
+					}
+				}
+				System.out.println(socket.getInetAddress()+" "+name+" ："+xiaoxi);
+				String s = name+":"+xiaoxi;
+				//服务器输出
+				for(Socket s1:list){
+					PrintWriter printWriter = new PrintWriter(s1.getOutputStream());
+					printWriter.write(s+"\n");
+					printWriter.flush();
+				}
+			}catch(Exception e){
+				System.out.println("服务器出现异常"+e);
+			}
+			
+		}
+		
+	}
+}
+
+//客户端
+import java.io.*;
+import java.util.Scanner;
+import java.net.*;
+public class Client{
+	public static void main(String[] kl) throws IOException{
+		Socket socket = null;
+		try{
+			socket = new Socket("127.0.0.1",8888);
+			PrintWriter p = new PrintWriter(socket.getOutputStream());
+			Scanner sc = new Scanner(System.in);
+			System.out.println("请输入你的网名:");
+			String s = sc.next();
+			p.write(s+"\n");
+			p.flush();
+			new Thread(new Cout(socket)).start();
+			new Thread(new Cin(socket)).start();	
+		}catch(Exception e){
+			System.out.println("客户端出现异常"+e);
+		}
+	}
+}
+
+//客户端输出流线程
+import java.io.*;
+import java.util.Scanner;
+import java.net.*;
+import java.util.*;
+class Cout implements Runnable{
+	Socket socket = null;
+	public Cout(Socket socket){
+		this.socket = socket;
+	}
+	public void run(){
+		while(true){
+			Scanner sc = new Scanner(System.in);
+			try{
+				String s = sc.next();
+				PrintWriter printWriter = new PrintWriter(socket.getOutputStream());
+				printWriter.write(s+"\n");
+				printWriter.flush();
+			}catch(Exception e){
+				System.out.println("客户端输出流出现异常"+e);
+			}
+		}	
+	}
+}
+
+//客户端输入流线程
+import java.io.*;
+import java.util.*;
+import java.net.*;
+class Cin implements Runnable{
+	Socket socket = null;
+	public Cin(Socket socket){
+		this.socket = socket;
+	}
+	public void run(){
+		while(true){
+			try{
+				BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				String fanhui=null;
+				fanhui = bufferedReader.readLine();
+				System.out.println(fanhui);
+			}catch(Exception e){
+				System.out.println("客户端输入流出现异常"+e);
+			}
+		}
+	}
+}
